@@ -31,12 +31,12 @@ func main() {
 	defer cn.Close()
 
 	e.GET("/", func(c echo.Context) error {
-		name := c.QueryParam("name")
-		return c.String(http.StatusOK, redis_get(name, cn))
+		id := c.QueryParam("id")
+		return c.String(http.StatusOK, redis_get(id, cn))
 	})
 	e.POST("/", func(c echo.Context) error {
-		hoge := c.FormValue("hoge")
-		return c.String(http.StatusOK, "Hello, "+hoge)
+		id := c.FormValue("id")
+		return c.String(http.StatusOK, redis_get(id,cn))
 	})
 	e.Logger.Fatal(e.Start(":8080"))
 }
