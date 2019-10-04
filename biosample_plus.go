@@ -5,12 +5,11 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/labstack/echo"
 	"net/http"
+	"os"
 )
 
-func redis_connection() redis.Conn {
-	const IP_PORT = "127.0.0.1:6379"
-
-	c, err := redis.Dial("tcp", IP_PORT)
+func redis_connection(address string) redis.Conn {
+	c, err := redis.Dial("tcp", address)
 	if err != nil {
 		panic(err)
 	}
@@ -26,8 +25,14 @@ func redis_get(key string, c redis.Conn) string {
 }
 
 func main() {
+	address := ""
+	if len(os.Args) == 1 {
+		address = "127.0.0.1:6379"
+	} else {
+		address = os.Args[1]
+	}
 	e := echo.New()
-	cn := redis_connection()
+	cn := redis_connection(address)
 	defer cn.Close()
 
 	e.GET("/", func(c echo.Context) error {
@@ -36,7 +41,7 @@ func main() {
 	})
 	e.POST("/", func(c echo.Context) error {
 		id := c.FormValue("id")
-		return c.String(http.StatusOK, redis_get(id,cn))
+		return c.String(http.StatusOK, redis_get(id, cn))
 	})
 	e.Logger.Fatal(e.Start(":8080"))
 }
