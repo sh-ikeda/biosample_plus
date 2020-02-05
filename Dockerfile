@@ -1,10 +1,18 @@
-FROM golang:1.13
-RUN apt-get update && \
-    apt-get -y install --no-install-recommends \
-    redis-server
+FROM golang:1.13.7-alpine3.11 AS build-env
+
+RUN apk --no-cache add git
+
 RUN go get github.com/garyburd/redigo/redis && go get github.com/labstack/echo
-WORKDIR /usr/local/bin
-COPY ./biosample_plus.go ./
-RUN go build -o biosample_plus biosample_plus.go
+
+WORKDIR /go/build
+
+COPY . .
+WORKDIR ./cmd/bspsrv/
+RUN go build
+
+
+FROM alpine:3.11
+
+COPY --from=build-env /go/build/cmd/bspsrv/bspsrv /usr/local/bin
 EXPOSE 8080
-CMD ["./biosample_plus"]
+CMD ["bspsrv"]

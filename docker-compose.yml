@@ -1,0 +1,20 @@
+version: '3'
+services:
+
+  redis:
+    image: redis:latest
+    container_name: bsp-redis
+    ports:
+      - 6379:6379
+    command:
+      redis-server --appendonly yes
+
+  bspsrv:
+    image: shikeda/biosample_plus
+    container_name: bspsrv
+    ports:
+      - 8080:8080
+    command:
+      bspsrv localhost:6379
+    depends_on:
+      - redis
