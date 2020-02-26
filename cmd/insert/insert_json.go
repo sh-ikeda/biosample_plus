@@ -9,10 +9,8 @@ import (
 	"strings"
 )
 
-func redis_connection() redis.Conn {
-	const IP_PORT = "127.0.0.1:6379"
-
-	c, err := redis.Dial("tcp", IP_PORT)
+func redis_connection(ip_port string) redis.Conn {
+	c, err := redis.Dial("tcp", ip_port)
 	if err != nil {
 		panic(err)
 	}
@@ -24,13 +22,14 @@ func redis_set(key string, value string, c redis.Conn) {
 }
 
 func main() {
-	if len(os.Args) == 1 {
-		fmt.Fprintln(os.Stderr, "usage: insert_json json_file")
+	if len(os.Args) != 3 {
+		fmt.Fprintln(os.Stderr, "usage: insert_json IP:port json_file")
 		os.Exit(1)
 	}
 
+	ip_port := os.Args[1]
 	fmt.Fprintln(os.Stderr, "Loading json file...")
-	bytes, err := ioutil.ReadFile(os.Args[1])
+	bytes, err := ioutil.ReadFile(os.Args[2])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -45,7 +44,7 @@ func main() {
 	}
 	fmt.Fprintf(os.Stderr, "Done. (Total %d entries)\n", len(decode_data.([]interface{})))
 
-	c := redis_connection()
+	c := redis_connection(ip_port)
 	defer c.Close()
 
 	fmt.Fprintln(os.Stderr, "Inserting data into redis DB...")
