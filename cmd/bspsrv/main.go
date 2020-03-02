@@ -1,18 +1,16 @@
 package main
 
 import (
-_	"fmt"
-_	"github.com/garyburd/redigo/redis"
-_	"github.com/nitishm/go-rejson"
+	"bufio"
 	"github.com/labstack/echo"
 	"net/http"
 	"os"
+
 	"bsplus"
 )
 
 type Params struct {
-	Ids []string `json:"id"`
-	//Ids string `json:"id"`
+	Ids []string `json:"id" form:"id"`
 }
 
 func main() {
@@ -25,37 +23,60 @@ func main() {
 	e := echo.New()
 	cn := bsplus.Redis_connection(address)
 	defer cn.Close()
-	// rh := rejson.NewReJSONHandler()
-	// rh.SetRedigoClient(cn)
 
 	e.GET("/", func(c echo.Context) error {
 		id := c.QueryParam("id")
-		return c.String(http.StatusOK, bsplus.Redis_get(id, cn))
-		//return c.String(http.StatusOK, bsplus.Redis_json_get(id, rh))
-	})
-
-	e.POST("/", func(c echo.Context) error {
-		id := c.FormValue("id")
-		return c.String(http.StatusOK, bsplus.Redis_get(id, cn))
+		bsp_entry , err := bsplus.Redis_get(id, cn)
+		if err != nil {
+			return c.String(http.StatusNotFound, "ID \"" + id + "\" is not found on BioSamplePlus.")
+		}
+		return c.String(http.StatusOK, bsp_entry)
 	})
 
 	e.POST("/api/", func(c echo.Context) error {
-		id := new(Params)
-		if err := c.Bind(id); err != nil {
+		ids := new(Params)
+		if err := c.Bind(ids); err != nil {
 			return err
 		}
 		resp := "["
-		for k := range id.Ids {
+		for k := range ids.Ids {
+			bsp_entry, err := bsplus.Redis_get(ids.Ids[k], cn)
+			if err == nil {
 			if resp != "[" {
 				resp += ","
 			}
-			resp += bsplus.Redis_get(id.Ids[k], cn)
+				resp += bsp_entry
+			}
 		}
 		resp += "]"
 		return c.String(http.StatusOK, resp)
-		//return c.String(http.StatusOK, redis_get(id.Ids[0], cn))
-		//return c.String(http.StatusOK, redis_get(id.Ids, cn))
-		//return c.JSON(http.StatusOK, id)
+	})
+
+	e.POST("/list/", func(c echo.Context) error {
+		file, err := c.FormFile("file")
+		if err != nil {
+			return err
+		}
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		scanner := bufio.NewScanner(src)
+		resp := "["
+		for scanner.Scan() {
+			id := scanner.Text()
+			bsp_entry, err := bsplus.Redis_get(id, cn)
+			if err == nil {
+				if resp != "[" {
+					resp += ","
+				}
+				resp += bsp_entry
+			}
+		}
+		resp += "]"
+		return c.String(http.StatusOK, resp)
 	})
 
 	e.Logger.Fatal(e.Start(":8080"))

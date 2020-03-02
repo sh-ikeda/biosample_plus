@@ -16,12 +16,12 @@ func Redis_connection(address string) redis.Conn {
 	return c
 }
 
-func Redis_get(key string, c redis.Conn) string {
+func Redis_get(key string, c redis.Conn) (string, error) {
 	s, err := redis.String(c.Do("GET", key))
-	if err != nil {
-		fmt.Println(err)
-	}
-	return s
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	return s, err
 }
 
 func Redis_set(key string, value string, c redis.Conn) {
